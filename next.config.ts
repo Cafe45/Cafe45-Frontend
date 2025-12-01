@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  env: {
+    BACKEND_URL: 'https://localhost:7147/api/v1',
+  },
 };
 
 export default nextConfig;
