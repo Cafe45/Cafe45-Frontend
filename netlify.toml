@@ -1,0 +1,35 @@
+# Netlify Build Configuration for Cafe45 Frontend
+
+[build]
+  # Base directory is the current directory (cafe45-frontend)
+  base = "."
+  
+  # Build command
+  command = "npm run build"
+  
+  # Publish directory (Next.js output)
+  publish = ".next"
+
+[build.environment]
+  # Node version
+  NODE_VERSION = "20"
+
+# Redirect rules for Supabase Auth
+[[redirects]]
+  from = "/auth/callback"
+  to = "/.netlify/functions/auth-callback"
+  status = 200
+
+# SPA fallback for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

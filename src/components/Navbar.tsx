@@ -20,38 +20,33 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between relative">
-        
+
         {/* VÄNSTER: Logotyp */}
         <Link href="/" className="text-xl font-black tracking-tighter hover:opacity-80 transition-opacity z-20">
           Café 45
         </Link>
 
         {/* MITTEN: Den nya snygga Navigation Menu */}
+        {/* MITTEN: Den nya snygga Navigation Menu */}
         <div className="hidden md:flex absolute left-1/2 -translate-x-1/2">
           <NavigationMenu>
             <NavigationMenuList>
-              
+
               <NavigationMenuItem>
-                <Link href="/" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Hem
-                  </NavigationMenuLink>
+                <Link href="/" className={navigationMenuTriggerStyle()}>
+                  Hem
                 </Link>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <Link href="/cakes" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Tårta
-                  </NavigationMenuLink>
+                <Link href="/cakes" className={navigationMenuTriggerStyle()}>
+                  Tårta
                 </Link>
               </NavigationMenuItem>
 
               <NavigationMenuItem>
-                <Link href="/meals" legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    Matlådor
-                  </NavigationMenuLink>
+                <Link href="/meals" className={navigationMenuTriggerStyle()}>
+                  Matlådor
                 </Link>
               </NavigationMenuItem>
 

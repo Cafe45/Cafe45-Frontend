@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
 import { Trash2 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
-import { postData } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { DeliveryType } from '@/types';
 
 export default function CheckoutPage() {
   const router = useRouter();
-  
+
   // FIXEN HÄR: Vi hämtar 'totalPrice' (siffra) istället för 'getTotalPrice'
-  const { items, removeItem, totalPrice } = useCart(); 
-  
+  const { items, removeItem, totalPrice } = useCart();
+
   const [deliveryMethod, setDeliveryMethod] = useState<'pickup' | 'delivery'>('pickup');
   const [loading, setLoading] = useState(false);
 
@@ -24,9 +24,9 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('');
 
   const deliveryFee = deliveryMethod === 'delivery' ? 200 : 0;
-  
+
   // FIXEN HÄR: Vi använder variabeln direkt, inga parenteser ()
-  const finalTotal = totalPrice + deliveryFee; 
+  const finalTotal = totalPrice + deliveryFee;
 
   const handleCheckout = async () => {
     if (!customerName || !phone || !email) {
@@ -41,28 +41,47 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      const payload = {
-        cartItems: items.map(i => ({ productId: i.id, quantity: i.quantity })),
-        customerName,
-        phoneNumber: phone,
-        email,
-        deliveryType: deliveryMethod === 'delivery' ? DeliveryType.HomeDelivery : DeliveryType.Pickup,
-        deliveryAddress: address || null,
-        successUrl: `${window.location.origin}/success`, 
-        cancelUrl: `${window.location.origin}/checkout`,
-      };
+      // 1. Skapa Order
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          total_amount: finalTotal,
+          customer_name: customerName,
+          phone_number: phone,
+          email: email,
+          delivery_type: deliveryMethod === 'delivery' ? 1 : 0,
+          delivery_cost: deliveryFee,
+          delivery_address: address || null,
+          payment_status: 'Betalas på plats',
+          workflow_status: 1 // Pending
+        })
+        .select()
+        .single();
 
-      const response: any = await postData('/checkout', payload);
+      if (orderError) throw orderError;
+      if (!orderData) throw new Error("Ingen order skapades.");
 
-      if (response && response.checkoutUrl) {
-        window.location.href = response.checkoutUrl; 
-      } else {
-        throw new Error('Ingen Stripe-URL mottogs.');
-      }
+      // 2. Skapa OrderItems
+      const orderItemsPayload = items.map(i => ({
+        order_id: orderData.id,
+        product_id: i.id, // Assuming i.id is the product ID string/uuid
+        product_name: i.name,
+        quantity: i.quantity,
+        unit_price: i.price
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItemsPayload);
+
+      if (itemsError) throw itemsError;
+
+      // 3. Framgång
+      router.push('/success');
 
     } catch (error) {
       console.error(error);
-      toast.error('Kunde inte starta betalningen. Försök igen.');
+      toast.error('Kunde inte lägga beställningen. Försök igen.');
       setLoading(false);
     }
   };
@@ -82,7 +101,7 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-white py-12 px-4 font-sans text-primary">
       <Toaster position="top-center" richColors />
-      
+
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold mb-12 text-center tracking-tight">Kassan</h1>
 
@@ -138,14 +157,14 @@ export default function CheckoutPage() {
           <div className="grid gap-4">
             <input type="text" placeholder="Namn *" className="w-full p-4 bg-input rounded-xl border-0 focus:ring-2 focus:ring-primary" value={customerName} onChange={e => setCustomerName(e.target.value)} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="tel" placeholder="Telefon *" className="w-full p-4 bg-input rounded-xl border-0 focus:ring-2 focus:ring-primary" value={phone} onChange={e => setPhone(e.target.value)} />
-                <input type="email" placeholder="E-post *" className="w-full p-4 bg-input rounded-xl border-0 focus:ring-2 focus:ring-primary" value={email} onChange={e => setEmail(e.target.value)} />
+              <input type="tel" placeholder="Telefon *" className="w-full p-4 bg-input rounded-xl border-0 focus:ring-2 focus:ring-primary" value={phone} onChange={e => setPhone(e.target.value)} />
+              <input type="email" placeholder="E-post *" className="w-full p-4 bg-input rounded-xl border-0 focus:ring-2 focus:ring-primary" value={email} onChange={e => setEmail(e.target.value)} />
             </div>
-            
+
             {deliveryMethod === 'delivery' && (
-                <div className="animate-in fade-in slide-in-from-top-2">
-                    <input type="text" placeholder="Leveransadress *" className="w-full p-4 bg-input rounded-xl border-0 focus:ring-2 focus:ring-primary mt-2" value={address} onChange={e => setAddress(e.target.value)} />
-                </div>
+              <div className="animate-in fade-in slide-in-from-top-2">
+                <input type="text" placeholder="Leveransadress *" className="w-full p-4 bg-input rounded-xl border-0 focus:ring-2 focus:ring-primary mt-2" value={address} onChange={e => setAddress(e.target.value)} />
+              </div>
             )}
           </div>
         </section>
@@ -173,10 +192,10 @@ export default function CheckoutPage() {
             disabled={loading}
             className="w-full h-16 rounded-full bg-primary text-white font-bold text-xl hover:opacity-90 disabled:opacity-50 transition-all shadow-lg active:scale-[0.99]"
           >
-            {loading ? 'Laddar...' : 'Gå till betalning'}
+            {loading ? 'Behandlar...' : 'Slutför beställning (Betala i butik)'}
           </button>
           <p className="text-center text-sm text-gray-400 mt-4 flex items-center justify-center gap-2">
-            🔒 Säker betalning via Stripe
+            🛍️ Du betalar enkelt när du hämtar eller får leverans.
           </p>
         </section>
 

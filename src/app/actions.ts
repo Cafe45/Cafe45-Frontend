@@ -1,33 +1,47 @@
 'use server';
 
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase-server';
 
-export async function loginAdmin(formData: FormData) {
-  const password = formData.get('password');
+export async function loginAdmin(prevState: any, formData: FormData) {
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
 
-  // HÄR ÄR LÖSENORDET! Byt ut 'kaffe123' till vad du vill.
-  const CORRECT_PASSWORD = process.env.ADMIN_PASSWORD || 'kaffe123';
-
-  if (password === CORRECT_PASSWORD) {
-    // Sätt en kaka som gäller i 24 timmar
-    const cookieStore = await cookies();
-    cookieStore.set('admin_session', 'true', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24, // 1 dygn
-      path: '/',
-    });
-    
-    redirect('/admin');
-  } else {
-    // Om fel lösenord
-    return { error: 'Fel lösenord' };
+  if (!email || !password) {
+    return { error: 'E-post och lösenord krävs' };
   }
+
+  const supabase = await createClient();
+
+  // Sign in with Supabase
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (authError || !authData.user) {
+    return { error: 'Fel e-post eller lösenord' };
+  }
+
+  // Check if user is admin
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', authData.user.id)
+    .single();
+
+  if (profileError || !profile || !profile.is_admin) {
+    // User is not an admin, sign them out
+    await supabase.auth.signOut();
+    return { error: 'Du har inte adminbehörighet' };
+  }
+
+  // User is authenticated and is admin
+  redirect('/admin');
 }
 
 export async function logoutAdmin() {
-  const cookieStore = await cookies();
-  cookieStore.delete('admin_session');
+  const supabase = await createClient();
+  await supabase.auth.signOut();
   redirect('/admin/login');
 }

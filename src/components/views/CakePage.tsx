@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Toaster, toast } from 'sonner';
-import { postData } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 import { CakeInquiryCommand, CakeSize, CakeFlavor } from '@/types';
 import SelectionCard from '@/components/SelectionCard'; // <--- Viktig import!
 
@@ -38,25 +38,28 @@ export default function CakePage() {
       return;
     }
     setIsSubmitting(true);
-    const payload: CakeInquiryCommand = {
+    const payload = {
       size: mapSizeToEnum(customRequest.size),
       flavor: mapFlavorToEnum(customRequest.flavor),
       description: customRequest.flavor === 'Valfritt' ? `${customRequest.description} (Smak: ${customRequest.customFlavor})` : customRequest.description,
       decorations: customRequest.extras.includes('decorations'),
-      cakeText: customRequest.extras.includes('text'),
-      extraFilling: customRequest.extras.includes('extra-filling'),
-      customerName: customRequest.customerName,
-      phoneNumber: customRequest.customerPhone,
-      email: customRequest.customerEmail
+      cake_text: customRequest.extras.includes('text'),
+      extra_filling: customRequest.extras.includes('extra-filling'),
+      customer_name: customRequest.customerName,
+      phone_number: customRequest.customerPhone,
+      email: customRequest.customerEmail,
+      workflow_status: 1 // Pending
     };
 
     try {
-      await postData('/inquiry', payload);
+      const { error } = await supabase.from('cake_inquiries').insert(payload);
+      if (error) throw error;
+
       toast.success('Tack! Din förfrågan är skickad.');
       setCustomRequest({ size: '8', flavor: 'Choklad', customFlavor: '', description: '', extras: [], customerName: '', customerPhone: '', customerEmail: '' });
       window.scrollTo(0, 0);
     } catch {
-      toast.error('Något gick fel.');
+      toast.error('Något gick fel med din förfrågan.');
     } finally {
       setIsSubmitting(false);
     }
@@ -77,7 +80,7 @@ export default function CakePage() {
   return (
     <div className="min-h-screen bg-white py-12 px-4 font-sans text-gray-900">
       <Toaster position="top-center" richColors />
-      
+
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold mb-4">Välj tårta</h1>
@@ -89,33 +92,33 @@ export default function CakePage() {
 
         {activeTab === 'custom' ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4">
-            
+
             {/* STEG 1 */}
             <section>
               <h2 className="text-2xl font-bold mb-4">1. Storlek & Smak</h2>
-              
+
               <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">Storlek</label>
               <div className="grid gap-3 mb-6">
                 {sizes.map(s => (
-                  <SelectionCard key={s.v} label={s.l} selected={customRequest.size === s.v} onClick={() => setCustomRequest({...customRequest, size: s.v})} />
+                  <SelectionCard key={s.v} label={s.l} selected={customRequest.size === s.v} onClick={() => setCustomRequest({ ...customRequest, size: s.v })} />
                 ))}
               </div>
 
               <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">Smak</label>
               <div className="grid gap-3 mb-6">
                 {flavors.map(f => (
-                  <SelectionCard key={f} label={f} selected={customRequest.flavor === f} onClick={() => setCustomRequest({...customRequest, flavor: f})} />
+                  <SelectionCard key={f} label={f} selected={customRequest.flavor === f} onClick={() => setCustomRequest({ ...customRequest, flavor: f })} />
                 ))}
               </div>
 
               {customRequest.flavor === 'Valfritt' && (
                 <div className="mb-6">
-                  <input type="text" placeholder="Vilken smak önskar du?" className="w-full p-4 bg-input rounded-xl border border-transparent focus:border-primary outline-none" value={customRequest.customFlavor} onChange={e => setCustomRequest({...customRequest, customFlavor: e.target.value})} />
+                  <input type="text" placeholder="Vilken smak önskar du?" className="w-full p-4 bg-input rounded-xl border border-transparent focus:border-primary outline-none" value={customRequest.customFlavor} onChange={e => setCustomRequest({ ...customRequest, customFlavor: e.target.value })} />
                 </div>
               )}
 
               <label className="block text-sm font-bold text-gray-700 mb-2 uppercase">Beskrivning</label>
-              <textarea placeholder="Beskriv tårtan..." className="w-full p-4 bg-input rounded-xl border border-transparent focus:border-primary outline-none min-h-[120px]" value={customRequest.description} onChange={e => setCustomRequest({...customRequest, description: e.target.value})} />
+              <textarea placeholder="Beskriv tårtan..." className="w-full p-4 bg-input rounded-xl border border-transparent focus:border-primary outline-none min-h-[120px]" value={customRequest.description} onChange={e => setCustomRequest({ ...customRequest, description: e.target.value })} />
             </section>
 
             {/* STEG 2 */}
@@ -132,9 +135,9 @@ export default function CakePage() {
             <section className="pt-8 border-t">
               <h2 className="text-2xl font-bold mb-4">3. Kunduppgifter</h2>
               <div className="grid gap-4">
-                <input type="text" placeholder="Namn *" className="w-full p-4 bg-input rounded-xl outline-none focus:ring-2 focus:ring-primary" value={customRequest.customerName} onChange={e => setCustomRequest({...customRequest, customerName: e.target.value})} />
-                <input type="tel" placeholder="Telefon *" className="w-full p-4 bg-input rounded-xl outline-none focus:ring-2 focus:ring-primary" value={customRequest.customerPhone} onChange={e => setCustomRequest({...customRequest, customerPhone: e.target.value})} />
-                <input type="email" placeholder="Email" className="w-full p-4 bg-input rounded-xl outline-none focus:ring-2 focus:ring-primary" value={customRequest.customerEmail} onChange={e => setCustomRequest({...customRequest, customerEmail: e.target.value})} />
+                <input type="text" placeholder="Namn *" className="w-full p-4 bg-input rounded-xl outline-none focus:ring-2 focus:ring-primary" value={customRequest.customerName} onChange={e => setCustomRequest({ ...customRequest, customerName: e.target.value })} />
+                <input type="tel" placeholder="Telefon *" className="w-full p-4 bg-input rounded-xl outline-none focus:ring-2 focus:ring-primary" value={customRequest.customerPhone} onChange={e => setCustomRequest({ ...customRequest, customerPhone: e.target.value })} />
+                <input type="email" placeholder="Email" className="w-full p-4 bg-input rounded-xl outline-none focus:ring-2 focus:ring-primary" value={customRequest.customerEmail} onChange={e => setCustomRequest({ ...customRequest, customerEmail: e.target.value })} />
               </div>
             </section>
 
