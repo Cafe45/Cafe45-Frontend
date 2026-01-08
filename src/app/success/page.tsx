@@ -9,6 +9,7 @@ function SuccessContent() {
   const { clearCart } = useCart();
 
   useEffect(() => {
+    // Nu när clearCart är stabil (tack vare useCallback) kommer denna bara köras EN gång.
     clearCart();
   }, [clearCart]);
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+// 1. Vi importerar useCallback här
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { toast } from 'sonner';
 
 export interface CartItem {
@@ -8,7 +9,8 @@ export interface CartItem {
   name: string;
   price: number;
   quantity: number;
-  type: 'cake' | 'meal';
+  type?: 'cake' | 'meal';
+  image?: string;
 }
 
 interface CartContextType {
@@ -40,7 +42,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
-  const clearCart = () => setItems([]);
+  // 2. HÄR ÄR FIXEN: Vi använder useCallback!
+  // Detta gör att funktionen är "stabil" och inte triggar useEffect om och om igen.
+  const clearCart = useCallback(() => {
+    setItems([]);
+  }, []);
 
   const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 

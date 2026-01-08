@@ -2,7 +2,7 @@ import './globals.css';
 import React from 'react';
 import { Inter } from 'next/font/google';
 import { CartProvider } from '@/contexts/CartContext';
-import Navbar from '@/components/Navbar'; // <--- 1. VIKTIG IMPORT HÄR
+import Navbar from '@/components/Navbar'; 
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -20,12 +20,14 @@ export default function RootLayout({
     <html lang="sv" suppressHydrationWarning>
       <body className={`${inter.className} bg-white text-primary antialiased`} suppressHydrationWarning={true}>
         <CartProvider>
-          {/* 2. HÄR LÄGGER VI MENYN SÅ DEN SYNS PÅ ALLA SIDOR */}
+          {/* Menyn ligger utanför main så den hamnar alltid överst */}
           <Navbar />
 
-          <main>
+          {/* pt-24 (96px) ser till att sidans innehåll inte göms under den fasta menyn */}
+          <main className="pt-24 min-h-screen">
             {children}
           </main>
+          
         </CartProvider>
       </body>
     </html>
