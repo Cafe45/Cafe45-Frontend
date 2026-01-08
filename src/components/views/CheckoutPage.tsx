@@ -18,14 +18,14 @@ export default function CheckoutPage() {
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState(''); // Detta blir nu bara gatuadressen
   const [allergies, setAllergies] = useState('');
 
   const deliveryFee = deliveryMethod === 'delivery' ? 200 : 0;
   const finalTotal = totalPrice + deliveryFee;
 
   const handleCheckout = async () => {
-    // --- SMART VALIDERING ---
+    // 1. Validering
     if (!customerName.trim()) {
       toast.error('Vänligen fyll i ditt namn.');
       return;
@@ -40,20 +40,8 @@ export default function CheckoutPage() {
     }
     
     if (deliveryMethod === 'delivery') {
-      if (!address.trim()) {
-        toast.error('Vänligen fyll i en leveransadress.');
-        return;
-      }
-
-      // Förbättrad koll: Godkänner Göteborg, Goteborg, Gothenburg oavsett case
-      const addr = address.toLowerCase();
-      const isGbg = addr.includes('göteborg') || addr.includes('goteborg') || addr.includes('gothenburg');
-      
-      if (!isGbg) {
-        toast.error('Vi levererar tyvärr endast inom Göteborgs-området just nu.', {
-          description: 'Kontrollera att du har skrivit "Göteborg" i adressen.',
-          duration: 5000,
-        });
+      if (!address.trim() || address.length < 3) {
+        toast.error('Vänligen fyll i din gatuadress.');
         return;
       }
     }
@@ -61,7 +49,7 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      // 2. Skapa Order i Supabase
+      // 2. Skapa Order
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -72,7 +60,8 @@ export default function CheckoutPage() {
           status: 'Ny',
           delivery_type: deliveryMethod === 'delivery' ? 1 : 0,
           delivery_cost: deliveryFee,
-          delivery_address: deliveryMethod === 'delivery' ? address : 'Hämtas i butik',
+          // Här lägger vi ihop gatan med "Göteborg" automatiskt för databasen
+          delivery_address: deliveryMethod === 'delivery' ? `${address}, Göteborg` : 'Hämtas i butik',
           allergies: allergies,
           payment_status: 'Betalas på plats'
         })
@@ -124,24 +113,22 @@ export default function CheckoutPage() {
       <Toaster position="top-center" richColors />
 
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold mb-12 text-center tracking-tight">Slutför beställning</h1>
+        <h1 className="text-4xl font-bold mb-12 text-center tracking-tight">Kassan</h1>
 
-        {/* 1. DIN BESTÄLLNING */}
-        <section className="mb-8 border border-gray-200 rounded-3xl p-6 md:p-8 shadow-sm">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            Din beställning
-          </h2>
+        {/* DIN BESTÄLLNING */}
+        <section className="mb-8 border border-gray-200 rounded-3xl p-6 md:p-8 shadow-sm bg-white">
+          <h2 className="text-2xl font-bold mb-6">Din beställning</h2>
           <div className="space-y-6">
             {items.map((item) => (
               <div key={item.id}>
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg mb-1">{item.name}</h3>
+                    <h3 className="font-bold text-lg">{item.name}</h3>
                     <p className="text-sm text-gray-500">{item.quantity} st × {item.price} kr</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <p className="font-bold text-lg">{item.quantity * item.price} kr</p>
-                    <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-full transition-colors">
+                    <button onClick={() => removeItem(item.id)} className="text-red-400 hover:text-red-600 p-2 transition-colors">
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
@@ -152,19 +139,19 @@ export default function CheckoutPage() {
           </div>
         </section>
 
-        {/* 2. LEVERANSVAL */}
-        <section className="mb-8 border border-gray-200 rounded-3xl p-6 md:p-8 shadow-sm">
-          <h2 className="text-2xl font-bold mb-6">Hur vill du få din beställning?</h2>
+        {/* LEVERANSVAL */}
+        <section className="mb-8 border border-gray-200 rounded-3xl p-6 md:p-8 shadow-sm bg-white">
+          <h2 className="text-2xl font-bold mb-6">Leveransmetod</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <button 
               onClick={() => setDeliveryMethod('pickup')}
-              className={`flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${deliveryMethod === 'pickup' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-gray-300'}`}
+              className={`flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${deliveryMethod === 'pickup' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-black'}`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 text-left">
                 <Store className="w-6 h-6" />
-                <div className="text-left">
-                  <span className="font-bold block">Hämta själv</span>
-                  <span className="text-xs opacity-70">Café 45, Göteborg</span>
+                <div>
+                  <span className="font-bold block">Hämta i butik</span>
+                  <span className="text-xs opacity-70">Södra vägen 45</span>
                 </div>
               </div>
               <span className="font-bold">0 kr</span>
@@ -172,13 +159,13 @@ export default function CheckoutPage() {
 
             <button 
               onClick={() => setDeliveryMethod('delivery')}
-              className={`flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${deliveryMethod === 'delivery' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-gray-300'}`}
+              className={`flex items-center justify-between p-5 rounded-2xl border-2 transition-all ${deliveryMethod === 'delivery' ? 'border-black bg-black text-white' : 'border-gray-200 hover:border-black'}`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 text-left">
                 <MapPin className="w-6 h-6" />
-                <div className="text-left">
+                <div>
                   <span className="font-bold block">Hemleverans</span>
-                  <span className="text-xs opacity-70">Inom Göteborg</span>
+                  <span className="text-xs opacity-70">Endast Göteborg</span>
                 </div>
               </div>
               <span className="font-bold">200 kr</span>
@@ -186,56 +173,59 @@ export default function CheckoutPage() {
           </div>
         </section>
 
-        {/* 3. DINA UPPGIFTER */}
-        <section className="mb-8 border border-gray-200 rounded-3xl p-6 md:p-8 shadow-sm">
+        {/* UPPGIFTER */}
+        <section className="mb-8 border border-gray-200 rounded-3xl p-6 md:p-8 shadow-sm bg-white">
           <h2 className="text-2xl font-bold mb-6">Dina uppgifter</h2>
           <div className="grid gap-5">
             <div>
               <label className="text-xs font-bold text-gray-400 uppercase ml-1 mb-1 block">Fullständigt Namn *</label>
-              <input type="text" placeholder="För- och efternamn" className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black focus:bg-white outline-none transition-all" value={customerName} onChange={e => setCustomerName(e.target.value)} />
+              <input type="text" placeholder="För- och efternamn" className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-black/5 transition-all" value={customerName} onChange={e => setCustomerName(e.target.value)} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase ml-1 mb-1 block">Telefonnummer *</label>
-                <input type="tel" placeholder="07x-xxx xx xx" className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black focus:bg-white outline-none transition-all" value={phone} onChange={e => setPhone(e.target.value)} />
+                <input type="tel" placeholder="07x-xxx xx xx" className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-black/5 transition-all" value={phone} onChange={e => setPhone(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs font-bold text-gray-400 uppercase ml-1 mb-1 block">E-postadress *</label>
-                <input type="email" placeholder="namn@exempel.se" className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black focus:bg-white outline-none transition-all" value={email} onChange={e => setEmail(e.target.value)} />
+                <label className="text-xs font-bold text-gray-400 uppercase ml-1 mb-1 block">E-post *</label>
+                <input type="email" placeholder="namn@mail.se" className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-black/5 transition-all" value={email} onChange={e => setEmail(e.target.value)} />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-400 uppercase ml-1 mb-1 block flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" /> Allergier / Meddelande
-              </label>
-              <textarea 
-                placeholder="Skriv här om du har allergier eller speciella önskemål..." 
-                className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black focus:bg-white min-h-[100px] outline-none transition-all" 
-                value={allergies} 
-                onChange={e => setAllergies(e.target.value)} 
-              />
+              <label className="text-xs font-bold text-gray-400 uppercase ml-1 mb-1 block">Allergier eller meddelande</label>
+              <textarea placeholder="T.ex. nötallergi eller portkod..." className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-black/5 min-h-[80px] transition-all" value={allergies} onChange={e => setAllergies(e.target.value)} />
             </div>
 
             {deliveryMethod === 'delivery' && (
               <div className="pt-4 border-t border-gray-100 animate-in fade-in slide-in-from-top-2">
-                <label className="text-xs font-bold text-black uppercase ml-1 mb-1 block underline">Leveransadress i Göteborg *</label>
-                <input 
-                  type="text" 
-                  autoFocus
-                  placeholder="Gatuadress, Postnummer, Göteborg" 
-                  className="w-full p-4 bg-white border-2 border-black rounded-xl outline-none shadow-md" 
-                  value={address} 
-                  onChange={e => setAddress(e.target.value)} 
-                />
-                <p className="text-[11px] text-gray-500 mt-2 italic">Tips: Kom ihåg att skriva "Göteborg" i adressen.</p>
+                <label className="text-xs font-bold text-black uppercase ml-1 mb-1 block">Leveransadress i Göteborg *</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    autoFocus
+                    placeholder="Gatuadress (t.ex. Södra vägen 12)" 
+                    className="flex-[2] p-4 bg-white border-2 border-black rounded-xl outline-none shadow-sm" 
+                    value={address} 
+                    onChange={e => setAddress(e.target.value)} 
+                  />
+                  <div className="flex-1 relative">
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value="Göteborg" 
+                      className="w-full p-4 bg-gray-100 border-2 border-gray-200 rounded-xl text-gray-500 font-bold cursor-not-allowed outline-none"
+                    />
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-2 italic">Hemleverans erbjuds endast inom Göteborg stad.</p>
               </div>
             )}
           </div>
         </section>
 
-        {/* 4. BETALNING & KNAPP */}
+        {/* BETALNING */}
         <section className="border-2 border-black rounded-3xl p-8 bg-white shadow-xl">
           <div className="space-y-3 mb-8">
             <div className="flex justify-between text-gray-600">
@@ -258,22 +248,11 @@ export default function CheckoutPage() {
           <button
             onClick={handleCheckout}
             disabled={loading}
-            className="w-full h-20 rounded-2xl bg-black text-white font-bold text-xl hover:bg-gray-800 disabled:opacity-50 transition-all flex items-center justify-center gap-3"
+            className="w-full h-20 rounded-2xl bg-black text-white font-bold text-xl hover:opacity-90 disabled:opacity-50 transition-all flex items-center justify-center gap-3"
           >
-            {loading ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <>
-                <CreditCard className="w-6 h-6"/>
-                Bekräfta Beställning
-              </>
-            )}
+            {loading ? <Loader2 className="animate-spin" /> : <><CreditCard className="w-6 h-6"/> Bekräfta Beställning</>}
           </button>
-          
-          <div className="flex items-center justify-center gap-2 mt-6 text-gray-500 text-sm">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            Betalning sker via Swish eller kort på plats
-          </div>
+          <p className="text-center text-sm text-gray-400 mt-4 italic">Betalning sker vid leverans/upphämtning.</p>
         </section>
       </div>
     </div>
