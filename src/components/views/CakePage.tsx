@@ -134,7 +134,7 @@ export default function CakePage() {
       return;
     }
 
-    // VALIDERING FÖR ADRESS
+    // VALIDERING FÖR ADRESS VID LEVERANS
     if (customRequest.deliveryType === 1) {
        if (!customRequest.address.trim() || customRequest.address.length < 3) {
          toast.error('Vänligen fyll i en gatuadress för leverans.');
@@ -163,8 +163,10 @@ export default function CakePage() {
       email: customRequest.customerEmail,
       workflow_status: 1,
       delivery_type: customRequest.deliveryType,
-      // Sparar kombinerad adress i databasen
-      address: customRequest.deliveryType === 1 ? `${customRequest.address}, Göteborg` : 'Hämtas i butik'
+      // Uppdaterad adress-logik för databasen
+      address: customRequest.deliveryType === 1 
+        ? `${customRequest.address}, Göteborg` 
+        : 'Nordanvindsgatan 2F, 417 12 Göteborg (Hämtning)'
     };
 
     try {
@@ -321,7 +323,7 @@ export default function CakePage() {
                   <Store className="w-6 h-6" />
                   <div className="text-left">
                     <div className="font-black text-sm uppercase">Hämta själv</div>
-                    <div className="text-[10px] opacity-70">Södra vägen 45</div>
+                    <div className="text-[10px] opacity-70 italic">Nordanvindsgatan 2F</div>
                   </div>
                 </button>
 
@@ -342,7 +344,7 @@ export default function CakePage() {
                 </button>
               </div>
 
-              {/* NY ADRESS-DESIGN */}
+              {/* LEVERANSADRESS */}
               {customRequest.deliveryType === 1 && (
                 <div className="mb-8 animate-in slide-in-from-top-4 fade-in duration-500">
                   <label className="block text-[10px] font-black text-black mb-2 uppercase tracking-widest">Gatuadress i Göteborg *</label>
@@ -364,6 +366,14 @@ export default function CakePage() {
                       />
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* HÄMTNINGSINFO */}
+              {customRequest.deliveryType === 0 && (
+                <div className="mb-8 p-4 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 animate-in fade-in">
+                  <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Upphämtningsplats:</p>
+                  <p className="text-sm font-black text-black">Nordanvindsgatan 2F, 417 12 Göteborg</p>
                 </div>
               )}
 
