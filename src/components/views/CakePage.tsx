@@ -134,14 +134,10 @@ export default function CakePage() {
       return;
     }
 
-    // VALIDERING FÖR GÖTEBORG
+    // VALIDERING FÖR ADRESS
     if (customRequest.deliveryType === 1) {
-       if (!customRequest.address.trim()) {
-         toast.error('Du måste ange en leveransadress.');
-         return;
-       }
-       if (!customRequest.address.toLowerCase().includes('göteborg')) {
-         toast.error('Vi levererar endast inom Göteborg.');
+       if (!customRequest.address.trim() || customRequest.address.length < 3) {
+         toast.error('Vänligen fyll i en gatuadress för leverans.');
          return;
        }
     }
@@ -167,7 +163,8 @@ export default function CakePage() {
       email: customRequest.customerEmail,
       workflow_status: 1,
       delivery_type: customRequest.deliveryType,
-      address: customRequest.address
+      // Sparar kombinerad adress i databasen
+      address: customRequest.deliveryType === 1 ? `${customRequest.address}, Göteborg` : 'Hämtas i butik'
     };
 
     try {
@@ -229,16 +226,16 @@ export default function CakePage() {
 
         {/* --- FLIK 1: SKAPA EGEN (FORMULÄR) --- */}
         {activeTab === 'custom' && (
-          <div className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-gray-100 shadow-xl max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4">
+          <div className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-gray-100 shadow-xl max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 text-black">
             
             {/* STEG 1 */}
             <section>
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                <span className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
-                Storlek & Smak
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 italic">
+                <span className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center text-sm not-italic">1</span>
+                STORLEK & SMAK
               </h2>
               
-              <label className="block text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Storlek</label>
+              <label className="block text-xs font-black text-black mb-3 uppercase tracking-widest">Välj antal bitar *</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
                 {sizes.map(s => (
                   <SelectionCard 
@@ -250,7 +247,7 @@ export default function CakePage() {
                 ))}
               </div>
 
-              <label className="block text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Smak</label>
+              <label className="block text-xs font-black text-black mb-3 uppercase tracking-widest">Välj bassmak *</label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
                 {flavors.map(f => (
                   <SelectionCard 
@@ -264,14 +261,14 @@ export default function CakePage() {
 
               {customRequest.flavor === 'Valfritt' && (
                 <div className="mb-8">
-                  <input type="text" placeholder="Vilken smak önskar du?" className="w-full p-4 bg-gray-50 rounded-xl border border-transparent focus:border-black outline-none transition-all" value={customRequest.customFlavor} onChange={e => setCustomRequest({ ...customRequest, customFlavor: e.target.value })} />
+                  <input type="text" placeholder="Vilken smak önskar du?" className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none transition-all" value={customRequest.customFlavor} onChange={e => setCustomRequest({ ...customRequest, customFlavor: e.target.value })} />
                 </div>
               )}
 
-              <label className="block text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Beskrivning</label>
+              <label className="block text-xs font-black text-black mb-3 uppercase tracking-widest">Beskriv din drömtårta *</label>
               <textarea 
-                placeholder="Beskriv tårtan, tema, önskemål om utseende..." 
-                className="w-full p-4 bg-gray-50 rounded-xl border border-transparent focus:border-black outline-none min-h-[120px] transition-all resize-none" 
+                placeholder="Berätta om tema, färger eller specifika önskemål..." 
+                className="w-full p-4 bg-gray-50 rounded-xl border-2 border-transparent focus:border-black outline-none min-h-[120px] transition-all resize-none" 
                 value={customRequest.description} 
                 onChange={e => setCustomRequest({ ...customRequest, description: e.target.value })} 
               />
@@ -279,24 +276,24 @@ export default function CakePage() {
 
             {/* STEG 2: ALLERGIER & TILLVAL */}
             <section className="pt-10 mt-10 border-t border-gray-100">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                <span className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
-                Allergier & Tillval
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 italic text-black">
+                <span className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center text-sm not-italic">2</span>
+                ALLERGIER & TILLVAL
               </h2>
 
               <div className="mb-8">
-                <label className="flex items-center gap-2 text-xs font-bold text-red-500 mb-3 uppercase tracking-wider">
-                  <AlertCircle className="w-4 h-4" /> Allergier
+                <label className="flex items-center gap-2 text-xs font-black text-red-500 mb-3 uppercase tracking-widest">
+                  <AlertCircle className="w-4 h-4" /> Allergier / Specialkost
                 </label>
                 <textarea 
-                  placeholder="Skriv in eventuella allergier här (t.ex. nötter, gluten, laktos)..." 
-                  className="w-full p-4 bg-red-50/50 border border-red-100 rounded-xl focus:border-red-300 focus:ring-2 focus:ring-red-100 outline-none min-h-[80px] transition-all resize-none placeholder:text-gray-400" 
+                  placeholder="T.ex. nötter, gluten, laktosfritt..." 
+                  className="w-full p-4 bg-red-50/30 border-2 border-transparent focus:border-red-200 rounded-xl outline-none min-h-[80px] transition-all resize-none" 
                   value={customRequest.allergies} 
                   onChange={e => setCustomRequest({ ...customRequest, allergies: e.target.value })} 
                 />
               </div>
 
-              <label className="block text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">Extra tillval</label>
+              <label className="block text-xs font-black text-black mb-3 uppercase tracking-widest">Extra tillval (valfritt)</label>
               <div className="grid gap-3 mb-6">
                 {extras.map(e => (
                   <SelectionCard key={e.id} label={e.l} selected={customRequest.extras.includes(e.id)} onClick={() => toggleExtra(e.id)} />
@@ -306,81 +303,97 @@ export default function CakePage() {
 
             {/* STEG 3: LEVERANS & KONTAKT */}
             <section className="pt-10 mt-10 border-t border-gray-100">
-              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                <span className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
-                Leverans & Kontakt
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 italic text-black">
+                <span className="bg-black text-white w-8 h-8 rounded-full flex items-center justify-center text-sm not-italic">3</span>
+                LEVERANS & KONTAKT
               </h2>
               
-              {/* LEVERANSVAL */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                 <button
                   type="button"
                   onClick={() => setCustomRequest({...customRequest, deliveryType: 0})}
-                  className={`p-4 rounded-xl border-2 flex items-center gap-3 transition-all ${
+                  className={`p-5 rounded-2xl border-2 flex items-center gap-4 transition-all ${
                     customRequest.deliveryType === 0 
-                      ? 'border-black bg-gray-50' 
-                      : 'border-gray-100 hover:border-gray-300'
+                      ? 'border-black bg-black text-white shadow-lg' 
+                      : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-black/20'
                   }`}
                 >
-                  <div className={`p-2 rounded-full ${customRequest.deliveryType === 0 ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}>
-                    <Store className="w-5 h-5" />
-                  </div>
+                  <Store className="w-6 h-6" />
                   <div className="text-left">
-                    <div className="font-bold text-sm">Hämta i butik</div>
-                    <div className="text-xs text-gray-500">Gratis</div>
+                    <div className="font-black text-sm uppercase">Hämta själv</div>
+                    <div className="text-[10px] opacity-70">Södra vägen 45</div>
                   </div>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setCustomRequest({...customRequest, deliveryType: 1})}
-                  className={`p-4 rounded-xl border-2 flex items-center gap-3 transition-all ${
+                  className={`p-5 rounded-2xl border-2 flex items-center gap-4 transition-all ${
                     customRequest.deliveryType === 1 
-                      ? 'border-black bg-gray-50' 
-                      : 'border-gray-100 hover:border-gray-300'
+                      ? 'border-black bg-black text-white shadow-lg' 
+                      : 'border-gray-100 bg-gray-50 text-gray-500 hover:border-black/20'
                   }`}
                 >
-                  <div className={`p-2 rounded-full ${customRequest.deliveryType === 1 ? 'bg-black text-white' : 'bg-gray-100 text-gray-500'}`}>
-                    <MapPin className="w-5 h-5" />
-                  </div>
+                  <MapPin className="w-6 h-6" />
                   <div className="text-left">
-                    <div className="font-bold text-sm">Hemleverans</div>
-                    <div className="text-xs text-gray-500">+200 kr (Endast Gbg)</div>
+                    <div className="font-black text-sm uppercase">Hemleverans</div>
+                    <div className="text-[10px] opacity-70">+200 kr</div>
                   </div>
                 </button>
               </div>
 
-              {/* ADRESSFÄLT - Visas bara vid hemleverans */}
+              {/* NY ADRESS-DESIGN */}
               {customRequest.deliveryType === 1 && (
-                <div className="mb-6 animate-in slide-in-from-top-2 fade-in">
-                  <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Leveransadress *</label>
-                  <input 
-                    type="text" 
-                    placeholder="Gatuadress, Postnummer, Ort" 
-                    className="w-full p-4 bg-white border-2 border-black/10 rounded-xl outline-none focus:border-black transition-all" 
-                    value={customRequest.address} 
-                    onChange={e => setCustomRequest({ ...customRequest, address: e.target.value })} 
-                  />
-                  <p className="text-xs text-gray-400 mt-2">Endast inom Göteborg.</p>
+                <div className="mb-8 animate-in slide-in-from-top-4 fade-in duration-500">
+                  <label className="block text-[10px] font-black text-black mb-2 uppercase tracking-widest">Gatuadress i Göteborg *</label>
+                  <div className="flex flex-col md:flex-row gap-2">
+                    <input 
+                      type="text" 
+                      autoFocus
+                      placeholder="Gata och nummer" 
+                      className="flex-[2] p-4 bg-white border-2 border-black rounded-xl outline-none shadow-sm" 
+                      value={customRequest.address} 
+                      onChange={e => setCustomRequest({ ...customRequest, address: e.target.value })} 
+                    />
+                    <div className="flex-1">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value="GÖTEBORG" 
+                        className="w-full p-4 bg-gray-100 border-2 border-gray-200 rounded-xl text-gray-400 font-black tracking-widest outline-none text-center cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 
               <div className="grid gap-4">
-                <input type="text" placeholder="Namn *" className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black transition-all" value={customRequest.customerName} onChange={e => setCustomRequest({ ...customRequest, customerName: e.target.value })} />
-                <input type="tel" placeholder="Telefon *" className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black transition-all" value={customRequest.customerPhone} onChange={e => setCustomRequest({ ...customRequest, customerPhone: e.target.value })} />
-                <input type="email" placeholder="Email (valfritt)" className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-black transition-all" value={customRequest.customerEmail} onChange={e => setCustomRequest({ ...customRequest, customerEmail: e.target.value })} />
+                <div>
+                  <label className="block text-[10px] font-black text-black mb-1 uppercase tracking-widest ml-1">Ditt namn *</label>
+                  <input type="text" placeholder="För- och efternamn" className="w-full p-4 bg-gray-50 rounded-xl outline-none border-2 border-transparent focus:border-black focus:bg-white transition-all text-black" value={customRequest.customerName} onChange={e => setCustomRequest({ ...customRequest, customerName: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-black mb-1 uppercase tracking-widest ml-1">Telefonnummer *</label>
+                    <input type="tel" placeholder="07x-xxx xx xx" className="w-full p-4 bg-gray-50 rounded-xl outline-none border-2 border-transparent focus:border-black focus:bg-white transition-all text-black" value={customRequest.customerPhone} onChange={e => setCustomRequest({ ...customRequest, customerPhone: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-black mb-1 uppercase tracking-widest ml-1">E-post</label>
+                    <input type="email" placeholder="namn@mail.se" className="w-full p-4 bg-gray-50 rounded-xl outline-none border-2 border-transparent focus:border-black focus:bg-white transition-all text-black" value={customRequest.customerEmail} onChange={e => setCustomRequest({ ...customRequest, customerEmail: e.target.value })} />
+                  </div>
+                </div>
               </div>
             </section>
 
-            <div className="mt-10 pt-6 border-t border-gray-100">
+            <div className="mt-12 pt-8 border-t-2 border-black/5">
               <button 
                 onClick={handleSubmitRequest} 
                 disabled={isSubmitting} 
-                className="w-full py-5 bg-black text-white font-bold rounded-2xl text-lg hover:shadow-xl hover:scale-[1.01] transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2"
+                className="w-full py-6 bg-black text-white font-black rounded-2xl text-xl hover:shadow-[0_20px_50px_rgba(0,0,0,0.2)] hover:-translate-y-1 active:translate-y-0 transition-all disabled:opacity-50 flex items-center justify-center gap-3 tracking-tighter shadow-xl"
               >
-                {isSubmitting ? <Loader2 className="animate-spin" /> : 'Skicka förfrågan'}
+                {isSubmitting ? <Loader2 className="animate-spin w-6 h-6" /> : 'SKICKA FÖRFRÅGAN'}
               </button>
-              <p className="text-center text-gray-400 text-sm mt-4">Detta är en förfrågan. Vi återkommer med pris och bekräftelse.</p>
+              <p className="text-center text-gray-400 text-[10px] uppercase font-bold tracking-widest mt-6">Vi svarar normalt inom 24 timmar med prisförslag.</p>
             </div>
           </div>
         )}
