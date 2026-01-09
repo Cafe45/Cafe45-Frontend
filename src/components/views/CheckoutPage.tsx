@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
-import { Trash2, AlertCircle, MapPin, Store, CreditCard, Loader2 } from 'lucide-react';
+import { Trash2, AlertCircle, MapPin, Store, CreditCard, Loader2, Info } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
@@ -18,7 +18,7 @@ export default function CheckoutPage() {
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [address, setAddress] = useState(''); // Detta blir nu bara gatuadressen
+  const [address, setAddress] = useState(''); 
   const [allergies, setAllergies] = useState('');
 
   const deliveryFee = deliveryMethod === 'delivery' ? 200 : 0;
@@ -49,7 +49,6 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      // 2. Skapa Order
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -60,8 +59,8 @@ export default function CheckoutPage() {
           status: 'Ny',
           delivery_type: deliveryMethod === 'delivery' ? 1 : 0,
           delivery_cost: deliveryFee,
-          // Här lägger vi ihop gatan med "Göteborg" automatiskt för databasen
-          delivery_address: deliveryMethod === 'delivery' ? `${address}, Göteborg` : 'Hämtas i butik',
+          // SPARAR RÄTT ADRESS I DATABASEN
+          delivery_address: deliveryMethod === 'delivery' ? `${address}, Göteborg` : 'Nordanvindsgatan 2F, 417 12 Göteborg (Hämtning)',
           allergies: allergies,
           payment_status: 'Betalas på plats'
         })
@@ -70,7 +69,6 @@ export default function CheckoutPage() {
 
       if (orderError) throw new Error(orderError.message);
 
-      // 3. Skapa Order Items
       const orderItems = items.map(i => ({
         order_id: orderData.id,
         product_name: i.name,
@@ -84,7 +82,6 @@ export default function CheckoutPage() {
 
       if (itemsError) throw new Error(itemsError.message);
 
-      // 4. Klart!
       if (clearCart) clearCart(); 
       router.push('/success');
 
@@ -151,7 +148,7 @@ export default function CheckoutPage() {
                 <Store className="w-6 h-6" />
                 <div>
                   <span className="font-bold block">Hämta i butik</span>
-                  <span className="text-xs opacity-70">Södra vägen 45</span>
+                  <span className="text-xs opacity-70">Nordanvindsgatan 2F</span>
                 </div>
               </div>
               <span className="font-bold">0 kr</span>
@@ -171,6 +168,16 @@ export default function CheckoutPage() {
               <span className="font-bold">200 kr</span>
             </button>
           </div>
+
+          {/* INFO OM UPPHÄMTNINGSADRESS */}
+          {deliveryMethod === 'pickup' && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-xl border border-gray-100 flex gap-3 items-center animate-in fade-in slide-in-from-top-2">
+              <Info className="w-5 h-5 text-gray-400" />
+              <p className="text-sm text-gray-600">
+                Hämtas på: <span className="font-bold text-black">Nordanvindsgatan 2F, 417 12 Göteborg</span>
+              </p>
+            </div>
+          )}
         </section>
 
         {/* UPPGIFTER */}
@@ -193,9 +200,10 @@ export default function CheckoutPage() {
               </div>
             </div>
 
+            {/* FIXAT: TAGIT BORT PORTKOD-TEXT HÄR */}
             <div>
               <label className="text-xs font-bold text-gray-400 uppercase ml-1 mb-1 block">Allergier eller meddelande</label>
-              <textarea placeholder="T.ex. nötallergi eller portkod..." className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-black/5 min-h-[80px] transition-all" value={allergies} onChange={e => setAllergies(e.target.value)} />
+              <textarea placeholder="Ange eventuella allergier eller önskemål..." className="w-full p-4 bg-gray-50 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-black/5 min-h-[80px] transition-all" value={allergies} onChange={e => setAllergies(e.target.value)} />
             </div>
 
             {deliveryMethod === 'delivery' && (
